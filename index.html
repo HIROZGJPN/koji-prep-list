@@ -48,7 +48,6 @@
       <div class="meta-grid">
         <div class="meta-field"><label>工事名</label><input type="text" id="projName" placeholder="○○工事"></div>
         <div class="meta-field"><label>日付</label><input type="date" id="projDate"></div>
-        <div class="meta-field full"><label>準備者</label><input type="text" id="projPerson" placeholder="氏名"></div>
       </div>
       <div class="sum-title" id="sumTitle">工事準備リスト</div>
       <div id="sumBody"></div>
@@ -320,14 +319,16 @@ function buildSummary(){
       const key = ci+'-'+ii;
       const s = state[key];
       if(s.hasOptions){
+        const specs = [];
         s.opts.forEach((o,oi)=>{
           if(!o.checked) return;
           const opt = it.options[oi];
           const label = opt.custom ? (o.customText.trim() ? o.customText.trim() : '自由入力') : opt.label;
-          lines.push({name:it.name, spec:label, qty:o.qty});
+          specs.push({label, qty:o.qty});
         });
+        if(specs.length>0) lines.push({name:it.name, specs});
       } else if(s.checked){
-        lines.push({name:it.name, spec:it.spec, qty:s.qty});
+        lines.push({name:it.name, specs:[{label:it.spec, qty:s.qty}]});
       }
     });
     if(lines.length===0) return;
@@ -338,9 +339,9 @@ function buildSummary(){
     const table = document.createElement('table'); table.className='sum-table';
     lines.forEach(r=>{
       const tr = document.createElement('tr');
+      const specHtml = r.specs.map(sp=>`<div class="sp">${sp.label?sp.label+' ':''}×${sp.qty}</div>`).join('');
       tr.innerHTML = `<td class="chk">✔</td>
-        <td><div class="nm">${r.name}</div>${r.spec?`<div class="sp">${r.spec}</div>`:''}</td>
-        <td class="qty">${r.qty} 点</td>`;
+        <td><div class="nm">${r.name}</div>${specHtml}</td>`;
       table.appendChild(tr);
     });
     wrap.appendChild(table);
@@ -354,8 +355,7 @@ document.getElementById('printBtn').addEventListener('click', ()=> window.print(
 document.getElementById('copyBtn').addEventListener('click', ()=>{
   const proj = document.getElementById('projName').value || '（工事名未入力）';
   const date = document.getElementById('projDate').value || '';
-  const person = document.getElementById('projPerson').value || '';
-  let out = [`【工事準備リスト】`, `工事名: ${proj}`, `日付: ${date}`, `準備者: ${person}`, ''];
+  let out = [`【工事準備リスト】`, `工事名: ${proj}`, `日付: ${date}`, ''];
   DATA.forEach((cat,ci)=>{
     const lines = [];
     cat.items.forEach((it,ii)=>{
