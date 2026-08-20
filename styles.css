@@ -213,11 +213,18 @@ table.sum-table .sp{color:var(--gray-500); font-size:11px; margin-top:1px;}
   .sum-head, .sum-actions{display:none !important;}
   .sum-scroll{overflow:visible; padding:0; height:auto;}
   .sum-card{box-shadow:none; border:none; max-width:100%; width:100%; padding:0; margin:0;}
-  .meta-grid{margin-bottom:10px;}
-  .sum-title{font-size:15px; margin:0 0 8px;}
-  .sum-cat{margin-bottom:8px; break-inside:avoid; page-break-inside:avoid;}
-  .sum-cat h3{font-size:11px; padding-bottom:3px; margin:0 0 4px;}
-  table.sum-table{font-size:10.5px;}
-  table.sum-table td{padding:3px 4px;}
+  .meta-grid{margin-bottom:6px;}
+  .meta-field label{font-size:8px;}
+  .meta-field input{font-size:11px; padding:3px 6px;}
+  .sum-title{font-size:13px; margin:0 0 5px;}
+  #sumBody{column-count:3; column-gap:12px;}
+  .sum-cat{margin-bottom:6px; break-inside:avoid; page-break-inside:avoid;}
+  .sum-cat h3{font-size:10px; padding-bottom:2px; margin:0 0 3px; border-bottom-width:1px;}
+  table.sum-table{font-size:8.5px;}
+  table.sum-table td{padding:1.5px 2px;}
+  table.sum-table td.chk{width:11px; font-size:9px;}
   table.sum-table tr{break-inside:avoid; page-break-inside:avoid;}
+  table.sum-table td:last-child{display:flex; flex-wrap:wrap; align-items:baseline; column-gap:4px;}
+  table.sum-table .nm{white-space:nowrap;}
+  table.sum-table .sp{font-size:8.5px; margin-top:0; white-space:nowrap;}
 }
