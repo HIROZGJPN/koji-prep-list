@@ -43,12 +43,12 @@
   .toolbar{
     display:flex; gap:8px; padding:8px 12px 2px; overflow-x:auto;
   }
-  .chip{
+  .chip-cat{
     flex-shrink:0; font-size:12.5px; padding:6px 12px; border-radius:999px;
     background:#fff; border:1px solid var(--gray-200); color:var(--gray-700); font-weight:600;
     white-space:nowrap;
   }
-  .chip.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+  .chip-cat.active{background:var(--blue); color:#fff; border-color:var(--blue);}
   main{padding:6px 10px 0;}
   .category{
     background:#fff; border-radius:14px; margin:10px 0; overflow:hidden;
@@ -70,16 +70,18 @@
   .category.collapsed .chev{transform:rotate(-90deg);}
   .cat-body{}
   .category.collapsed .cat-body{display:none;}
+
   .item-row{
     display:flex; align-items:center; gap:10px; padding:11px 14px;
     border-top:1px solid var(--gray-100); cursor:pointer;
   }
   .item-row.hidden{display:none;}
   .item-row.selected{background:var(--blue-light);}
+  .item-row.expanded{background:var(--gray-50);}
   .box{
     width:23px;height:23px;border-radius:7px;border:2px solid var(--gray-300);
     flex-shrink:0; display:flex; align-items:center; justify-content:center;
-    background:#fff; transition:.12s;
+    background:#fff; transition:.12s; position:relative;
   }
   .item-row.selected .box{background:var(--blue); border-color:var(--blue);}
   .box svg{width:15px;height:15px;color:#fff; opacity:0; transform:scale(.5); transition:.12s;}
@@ -87,22 +89,57 @@
   .item-text{flex:1; min-width:0;}
   .item-name{font-size:14.5px; font-weight:600; color:var(--gray-900); line-height:1.3;}
   .item-spec{font-size:11.5px; color:var(--gray-500); margin-top:1px; line-height:1.35;}
+  .item-hint{font-size:10.5px; color:var(--blue); margin-top:1px; font-weight:600;}
+
   .qty-wrap{
     display:flex; align-items:center; gap:0; flex-shrink:0;
     background:var(--gray-100); border-radius:9px; overflow:hidden;
-    opacity:0; pointer-events:none; transform:scale(.9); transition:.12s;
   }
-  .item-row.selected .qty-wrap{opacity:1; pointer-events:auto; transform:scale(1);}
   .qty-btn{
-    width:30px;height:30px; border:none; background:transparent; font-size:17px; font-weight:700;
+    width:28px;height:28px; border:none; background:transparent; font-size:16px; font-weight:700;
     color:var(--blue); display:flex; align-items:center; justify-content:center;
   }
   .qty-btn:active{background:var(--gray-200);}
   .qty-val{
-    width:30px; text-align:center; font-size:14px; font-weight:700; color:var(--gray-900);
-    -moz-appearance:textfield;
+    width:28px; text-align:center; font-size:13.5px; font-weight:700; color:var(--gray-900);
+    border:none; background:transparent; -moz-appearance:textfield;
   }
   .qty-val::-webkit-outer-spin-button,.qty-val::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+
+  .badge-count{
+    font-size:11px; font-weight:800; color:#fff; background:var(--blue);
+    border-radius:999px; padding:2px 8px; flex-shrink:0;
+  }
+  .chev-mini{width:16px;height:16px;color:var(--gray-400); flex-shrink:0; transition:transform .2s;}
+  .item-row.expanded .chev-mini{transform:rotate(180deg);}
+
+  .opt-panel{
+    display:none; padding:2px 14px 14px 47px; border-top:1px dashed var(--gray-200); background:var(--gray-50);
+  }
+  .opt-panel.show{display:block;}
+  .opt-hint{font-size:10.5px; color:var(--gray-500); margin:8px 0 6px;}
+  .opt-list{display:flex; flex-direction:column; gap:6px;}
+  .opt-item{
+    display:flex; align-items:center; gap:8px; background:#fff; border:1.5px solid var(--gray-200);
+    border-radius:10px; padding:8px 10px;
+  }
+  .opt-item.on{border-color:var(--blue); background:var(--blue-light);}
+  .opt-chip-box{
+    width:19px;height:19px;border-radius:6px;border:2px solid var(--gray-300); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; background:#fff;
+  }
+  .opt-item.on .opt-chip-box{background:var(--blue); border-color:var(--blue);}
+  .opt-chip-box svg{width:12px;height:12px;color:#fff; opacity:0;}
+  .opt-item.on .opt-chip-box svg{opacity:1;}
+  .opt-label{flex:1; font-size:13px; font-weight:600; color:var(--gray-900); min-width:0;}
+  .opt-custom-input{
+    flex:1; min-width:0; border:1px solid var(--gray-200); border-radius:8px; padding:6px 8px;
+    font-size:12.5px; background:var(--gray-50); display:none;
+  }
+  .opt-item.on .opt-custom-input.enabled{display:block;}
+  .opt-qty{display:none; flex-shrink:0;}
+  .opt-item.on .opt-qty{display:flex;}
+
   .empty-msg{padding:24px; text-align:center; color:var(--gray-500); font-size:13px;}
 
   .footer-bar{
@@ -194,7 +231,7 @@
 
 <header>
   <h1>🛠 工事準備リスト作成</h1>
-  <div class="sub">道具をタップして選択 → 数量を入力 → リストを作成</div>
+  <div class="sub">品名を選択 → 仕様を選択 → 数量を入力</div>
 </header>
 
 <div class="search-wrap">
@@ -238,28 +275,40 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const DATA = [{"category": "安全対策用品", "items": [{"name": "安全帯", "spec": "ｼﾝｸﾞﾙ ﾀﾞﾌﾞﾙ"}, {"name": "ﾊｰﾈｽ", "spec": "ｼﾝｸﾞﾙ ﾀﾞﾌﾞﾙ"}, {"name": "保護ﾒｶﾞﾈ", "spec": ""}, {"name": "上履き", "spec": ""}, {"name": "ﾋﾞﾆｰﾙ手袋", "spec": ""}, {"name": "清掃用具", "spec": "ﾎｳｷ ちりとり"}, {"name": "ｳｴｽ", "spec": ""}, {"name": "ﾊﾝﾄﾞﾌﾞﾛﾜ", "spec": ""}, {"name": "酸素濃度計", "spec": ""}, {"name": "足場材", "spec": ""}, {"name": "梯子", "spec": "1段 2段"}, {"name": "脚立", "spec": "1．4M ／ 2．(　　)M ／ 3．(　　)M"}, {"name": "照明器具", "spec": "手元 , 投光器"}, {"name": "ﾊﾞﾘｹｰﾄﾞ", "spec": "ｶﾗｰｺｰﾝ ／ ﾊﾞｰ"}, {"name": "吸い殻入れ", "spec": ""}, {"name": "防護服", "spec": "上着ﾀｲﾌﾟ 廉価品 ﾀｲﾍﾞｯｸ"}, {"name": "脚絆", "spec": ""}, {"name": "防塵ﾏｽｸ", "spec": ""}, {"name": "ﾍｱｰｷｬｯﾌﾟ", "spec": ""}, {"name": "耳栓", "spec": ""}, {"name": "掃除機", "spec": "100V 充電式"}, {"name": "真空掃除機", "spec": "ﾊﾝﾄﾞ 小 大 水 乾"}, {"name": "換気ﾌｧﾝ", "spec": ""}, {"name": "ﾌｧﾝﾀﾞｸﾄ", "spec": ""}, {"name": "足場板", "spec": "2M 3M 4M (　　)"}, {"name": "突っ張り棒", "spec": ""}, {"name": "養生ｼｰﾄ", "spec": "ﾌﾞﾙｰ 薄/厚手 透明 ﾛｰﾙ"}, {"name": "防炎ｼｰﾄ", "spec": "ﾛｰﾙ"}]}, {"category": "安全対策用品(火気使用)", "items": [{"name": "消火器", "spec": "CO2 , ABC"}, {"name": "防火用ﾊﾞｹﾂ", "spec": ""}, {"name": "ｽﾊﾟｯﾀｼｰﾄ", "spec": ""}, {"name": "噴霧器", "spec": ""}]}, {"category": "使用工具", "items": [{"name": "溶接機", "spec": "ｴﾝｼﾞﾝｳｪﾙﾀﾞｰ ／ TIG溶接機 ﾎﾞﾝﾍﾞ 大 小 ／ CO2溶接機 ﾎﾞﾝﾍﾞ ／ 電気溶接機"}, {"name": "ｶﾞｽ切断器", "spec": "ﾎﾞﾝﾍﾞ台車 ｶﾞｽ共"}, {"name": "ﾌﾟﾗｽﾞﾏ切断器", "spec": ""}, {"name": "ｸﾞﾗｲﾝﾀﾞｰ", "spec": "小 大"}, {"name": "充電ｸﾞﾗｲﾝﾀﾞｰ", "spec": ""}, {"name": "ｲﾝﾊﾟｸﾄﾄﾞﾗｲﾊﾞｰ", "spec": "充電式"}, {"name": "ﾄﾞﾗｲﾊﾞﾄﾞﾘﾙ", "spec": "充電式"}, {"name": "電気ﾄﾞﾘﾙ", "spec": "10mm以下 13mm以下 13mm以上"}, {"name": "ﾃｺ付きﾄﾞﾘﾙ", "spec": ""}, {"name": "小型ﾎﾞｰﾙ盤", "spec": ""}, {"name": "油圧式ﾊﾟﾝﾁｬｰ", "spec": ""}, {"name": "ﾊﾝﾏｰﾄﾞﾘﾙ", "spec": "充電式 ｹｰﾌﾞﾙ式"}, {"name": "ｾｯﾄﾊﾝﾏｰ", "spec": ""}, {"name": "ﾊﾝﾏｰ", "spec": ""}, {"name": "ｾｲﾊﾞｰｿｰ", "spec": ""}, {"name": "ﾁｯﾌﾟｿｰ", "spec": ""}, {"name": "100V-3P", "spec": "電工ﾄﾞﾗﾑ (ｱｰｽ,遮断機付き) ／ 延長ｺｰﾄﾞ (ｱｰｽ付き)"}, {"name": "ﾁｪｰﾝﾌﾞﾛｯｸ", "spec": "0.75t, 1.2t, 1.6t, 1.6t以上"}, {"name": "ﾚﾊﾞｰﾌﾞﾛｯｸ", "spec": "0.75t, 1.2t, 1.6t, 1.6t以上"}, {"name": "ｼｬｯｸﾙ", "spec": "0.5t 1t 1.6t 2t"}, {"name": "ｼｬｺﾏﾝ", "spec": "小 50 100 200 (　　)"}, {"name": "ﾈｼﾞ切り旋盤", "spec": "ﾀﾞｲﾍｯﾄﾞ 8A 10A 15A 20A 25A ／ 32A 40A 50A 65A 80A"}, {"name": "ﾊﾟｲﾌﾟ受台", "spec": ""}, {"name": "脚付ﾊﾞｲｽ", "spec": ""}, {"name": "ﾁｪｰﾝﾊﾞｲｽ", "spec": ""}, {"name": "溶接棒", "spec": "軟鋼 高張力 (　　) ／ SUS"}, {"name": "TIG溶接棒", "spec": "SS (　　) ／ SUS (　　)"}, {"name": "溶接面", "spec": "手面 被面 被面自動 ﾍﾙﾒｯﾄ対応"}, {"name": "ﾎｰｽﾘｰﾙ", "spec": ""}, {"name": "棒ｸﾞﾗｲﾝﾀﾞｰ", "spec": "超硬ﾊﾞｰ 砥石 (　　)"}, {"name": "砥石", "spec": "ｶｯﾄ刃 砥石 ﾍﾟｰﾊﾟｰ"}, {"name": "電動ﾄﾞﾘﾙ用ｿｹｯﾄ", "spec": ""}, {"name": "ｲﾝﾊﾟｸﾄﾚﾝﾁ", "spec": "30mm 32mm"}, {"name": "ﾎﾞｯｸｽﾚﾝﾁｾｯﾄ", "spec": ""}, {"name": "ﾎﾙｿｰ", "spec": ""}, {"name": "ﾗｲﾄﾎﾞｰﾗｰ", "spec": "18mm"}, {"name": "ｱﾝｶｰ", "spec": "SUS M10"}, {"name": "ﾌﾟﾗｽﾁｯｸﾊﾝﾏｰ", "spec": ""}, {"name": "ﾊﾞﾝﾄﾞｿｰ", "spec": "100mm 150mm 300mm"}, {"name": "ﾊﾞﾝﾄﾞｿｰ替刃", "spec": ""}, {"name": "200V-ﾄﾞﾗﾑ", "spec": ""}, {"name": "変圧器", "spec": ""}, {"name": "台付ﾜｲﾔｰ", "spec": "φ6 φ9 φ12 φ14 φ16"}, {"name": "ﾅｲﾛﾝｽﾘﾝｸﾞ", "spec": ""}, {"name": "ﾛｰﾌﾟ", "spec": ""}, {"name": "ｹｰﾌﾞﾙ引き", "spec": ""}, {"name": "ﾊﾟｲﾌﾟﾚﾝﾁ", "spec": "200 250 350 450 600"}, {"name": "ﾁｪｰﾝﾚﾝﾁ", "spec": "200 300 450"}]}, {"category": "手回り工具", "items": [{"name": "ﾓﾝｷｰ ｽﾊﾟﾅ 六角ﾚﾝﾁ ﾀｶﾞﾈ ﾄﾞﾗｲﾊﾞ ﾔｽﾘ ﾍﾟﾝﾁ ﾆｯﾊﾟ", "spec": ""}, {"name": "ﾊﾞｰﾙ", "spec": "300 500 1000 1500 (　　)"}, {"name": "ﾊﾟｲﾌﾟｶｯﾀ", "spec": ""}, {"name": "ﾊﾞｶ棒", "spec": ""}, {"name": "ｼﾉ", "spec": ""}, {"name": "ﾌﾞﾗｼ", "spec": "真鍮 SUS 塩ﾋﾞ"}, {"name": "ﾀｯﾌﾟ", "spec": "M6 M8 M10 M12 M16 (　　)"}, {"name": "ﾀﾞｲｽ", "spec": "M6 M8 M10 M12 M16 (　　)"}, {"name": "ﾗﾁｪｯﾄﾚﾝﾁ", "spec": "～26 (　　)"}, {"name": "ｸﾞﾘｰｽﾎﾟﾝﾌﾟ", "spec": "ｸﾞﾘｰｽ 2本"}, {"name": "ｺｰｷﾝｸﾞｶﾞﾝ", "spec": "ｸﾘｱ 2本"}, {"name": "ｽﾊﾟﾅ大", "spec": "30mm 32mm"}, {"name": "ｽﾅｯﾌﾟﾘﾝｸﾞﾌﾟﾗｲﾔｰ", "spec": ""}, {"name": "ﾌﾟｰﾘｰ抜き", "spec": "φ100 φ150 φ250 φ350"}]}, {"category": "消耗品", "items": [{"name": "ﾋﾞﾆﾙﾃｰﾌﾟ", "spec": ""}, {"name": "養生ﾃｰﾌﾟ", "spec": ""}, {"name": "ｼｰﾙﾃｰﾌﾟ", "spec": ""}, {"name": "ﾍﾙﾒｼｰﾙ", "spec": ""}, {"name": "番線", "spec": "土木用 電気用"}, {"name": "ｺﾞﾐ袋", "spec": ""}, {"name": "ｶﾞﾗ袋", "spec": ""}, {"name": "ﾘｰｸﾁｪｯｸ", "spec": "ﾘｰｸﾁｪｯｶｰ 石鹸水"}, {"name": "潤滑油", "spec": ""}, {"name": "ｽﾃﾝｺﾛﾘﾝ", "spec": ""}, {"name": "ﾊﾟｰﾂｸﾘﾅｰ", "spec": ""}, {"name": "油分解ｽﾌﾟﾚｰ", "spec": "ｼﾝﾌﾟﾙｸﾞﾘｰﾝ"}]}, {"category": "測定器具", "items": [{"name": "水準器", "spec": "小 大 配管用"}, {"name": "ﾁﾙﾃｨﾝｸﾞﾚﾍﾞﾙ", "spec": ""}, {"name": "ｽﾄﾚｯﾁ", "spec": "300 600 1000 1500 2000"}, {"name": "隙間ｹﾞｰｼﾞ", "spec": ""}, {"name": "下げ振り", "spec": ""}, {"name": "ｻｼｶﾞﾈ", "spec": "200 300 450"}, {"name": "ﾚｰｻﾞｰ芯出し", "spec": ""}, {"name": "ﾚｰｻﾞｰﾚﾍﾞﾙ", "spec": ""}, {"name": "水糸", "spec": ""}, {"name": "ﾃｽﾀｰ", "spec": ""}, {"name": "墨つぼ", "spec": ""}, {"name": "ﾁｪｰｸﾗｲﾝ", "spec": ""}]}, {"category": "特殊準備品", "items": [{"name": "SUS養生板", "spec": ""}, {"name": "ｺﾝﾊﾟﾈ", "spec": "9mm (　　)"}, {"name": "ﾍﾞﾆﾔ養生板", "spec": "木 ﾌﾟﾗ"}, {"name": "ｽﾋﾟｰﾄﾞﾛｰﾗｰ", "spec": ""}, {"name": "電動ｳｨﾝﾁ", "spec": ""}, {"name": "平台車", "spec": ""}, {"name": "ﾌﾟﾗ台車", "spec": ""}, {"name": "手押し台車", "spec": ""}, {"name": "高所作業車", "spec": "TR12 TB8 TB6(　　) TB4"}]}];
+const DATA = [{"category": "安全対策用品", "items": [{"name": "安全帯", "spec": "ｼﾝｸﾞﾙ ﾀﾞﾌﾞﾙ", "options": [{"label": "ｼﾝｸﾞﾙ", "custom": false}, {"label": "ﾀﾞﾌﾞﾙ", "custom": false}]}, {"name": "ﾊｰﾈｽ", "spec": "ｼﾝｸﾞﾙ ﾀﾞﾌﾞﾙ", "options": [{"label": "ｼﾝｸﾞﾙ", "custom": false}, {"label": "ﾀﾞﾌﾞﾙ", "custom": false}]}, {"name": "保護ﾒｶﾞﾈ", "spec": "", "options": []}, {"name": "上履き", "spec": "", "options": []}, {"name": "ﾋﾞﾆｰﾙ手袋", "spec": "", "options": []}, {"name": "清掃用具", "spec": "ﾎｳｷ ちりとり", "options": [{"label": "ﾎｳｷ", "custom": false}, {"label": "ちりとり", "custom": false}]}, {"name": "ｳｴｽ", "spec": "", "options": []}, {"name": "ﾊﾝﾄﾞﾌﾞﾛﾜ", "spec": "", "options": []}, {"name": "酸素濃度計", "spec": "", "options": []}, {"name": "足場材", "spec": "", "options": []}, {"name": "梯子", "spec": "1段 2段", "options": [{"label": "1段", "custom": false}, {"label": "2段", "custom": false}]}, {"name": "脚立", "spec": "1．4M ／ 2．(　　)M ／ 3．(　　)M", "options": [{"label": "1．4M", "custom": false}, {"label": "2．(　　)M", "custom": false}, {"label": "3．(　　)M", "custom": false}]}, {"name": "照明器具", "spec": "手元 , 投光器", "options": [{"label": "手元", "custom": false}, {"label": "投光器", "custom": false}]}, {"name": "ﾊﾞﾘｹｰﾄﾞ", "spec": "ｶﾗｰｺｰﾝ ／ ﾊﾞｰ", "options": [{"label": "ｶﾗｰｺｰﾝ", "custom": false}, {"label": "ﾊﾞｰ", "custom": false}]}, {"name": "吸い殻入れ", "spec": "", "options": []}, {"name": "防護服", "spec": "上着ﾀｲﾌﾟ 廉価品 ﾀｲﾍﾞｯｸ", "options": [{"label": "上着ﾀｲﾌﾟ", "custom": false}, {"label": "廉価品", "custom": false}, {"label": "ﾀｲﾍﾞｯｸ", "custom": false}]}, {"name": "脚絆", "spec": "", "options": []}, {"name": "防塵ﾏｽｸ", "spec": "", "options": []}, {"name": "ﾍｱｰｷｬｯﾌﾟ", "spec": "", "options": []}, {"name": "耳栓", "spec": "", "options": []}, {"name": "掃除機", "spec": "100V 充電式", "options": [{"label": "100V", "custom": false}, {"label": "充電式", "custom": false}]}, {"name": "真空掃除機", "spec": "ﾊﾝﾄﾞ 小 大 水 乾", "options": [{"label": "ﾊﾝﾄﾞ", "custom": false}, {"label": "小", "custom": false}, {"label": "大", "custom": false}, {"label": "水", "custom": false}, {"label": "乾", "custom": false}]}, {"name": "換気ﾌｧﾝ", "spec": "", "options": []}, {"name": "ﾌｧﾝﾀﾞｸﾄ", "spec": "", "options": []}, {"name": "足場板", "spec": "2M 3M 4M (　　)", "options": [{"label": "2M", "custom": false}, {"label": "3M", "custom": false}, {"label": "4M", "custom": false}, {"label": "自由入力", "custom": true}]}, {"name": "突っ張り棒", "spec": "", "options": []}, {"name": "養生ｼｰﾄ", "spec": "ﾌﾞﾙｰ 薄/厚手 透明 ﾛｰﾙ", "options": [{"label": "ﾌﾞﾙｰ", "custom": false}, {"label": "薄/厚手", "custom": false}, {"label": "透明", "custom": false}, {"label": "ﾛｰﾙ", "custom": false}]}, {"name": "防炎ｼｰﾄ", "spec": "ﾛｰﾙ", "options": []}]}, {"category": "安全対策用品(火気使用)", "items": [{"name": "消火器", "spec": "CO2 , ABC", "options": [{"label": "CO2", "custom": false}, {"label": "ABC", "custom": false}]}, {"name": "防火用ﾊﾞｹﾂ", "spec": "", "options": []}, {"name": "ｽﾊﾟｯﾀｼｰﾄ", "spec": "", "options": []}, {"name": "噴霧器", "spec": "", "options": []}]}, {"category": "使用工具", "items": [{"name": "溶接機", "spec": "ｴﾝｼﾞﾝｳｪﾙﾀﾞｰ ／ TIG溶接機 ﾎﾞﾝﾍﾞ 大 小 ／ CO2溶接機 ﾎﾞﾝﾍﾞ ／ 電気溶接機", "options": [{"label": "ｴﾝｼﾞﾝｳｪﾙﾀﾞｰ", "custom": false}, {"label": "TIG溶接機 ﾎﾞﾝﾍﾞ 大 小", "custom": false}, {"label": "CO2溶接機 ﾎﾞﾝﾍﾞ", "custom": false}, {"label": "電気溶接機", "custom": false}]}, {"name": "ｶﾞｽ切断器", "spec": "ﾎﾞﾝﾍﾞ台車 ｶﾞｽ共", "options": [{"label": "ﾎﾞﾝﾍﾞ台車", "custom": false}, {"label": "ｶﾞｽ共", "custom": false}]}, {"name": "ﾌﾟﾗｽﾞﾏ切断器", "spec": "", "options": []}, {"name": "ｸﾞﾗｲﾝﾀﾞｰ", "spec": "小 大", "options": [{"label": "小", "custom": false}, {"label": "大", "custom": false}]}, {"name": "充電ｸﾞﾗｲﾝﾀﾞｰ", "spec": "", "options": []}, {"name": "ｲﾝﾊﾟｸﾄﾄﾞﾗｲﾊﾞｰ", "spec": "充電式", "options": []}, {"name": "ﾄﾞﾗｲﾊﾞﾄﾞﾘﾙ", "spec": "充電式", "options": []}, {"name": "電気ﾄﾞﾘﾙ", "spec": "10mm以下 13mm以下 13mm以上", "options": [{"label": "10mm以下", "custom": false}, {"label": "13mm以下", "custom": false}, {"label": "13mm以上", "custom": false}]}, {"name": "ﾃｺ付きﾄﾞﾘﾙ", "spec": "", "options": []}, {"name": "小型ﾎﾞｰﾙ盤", "spec": "", "options": []}, {"name": "油圧式ﾊﾟﾝﾁｬｰ", "spec": "", "options": []}, {"name": "ﾊﾝﾏｰﾄﾞﾘﾙ", "spec": "充電式 ｹｰﾌﾞﾙ式", "options": [{"label": "充電式", "custom": false}, {"label": "ｹｰﾌﾞﾙ式", "custom": false}]}, {"name": "ｾｯﾄﾊﾝﾏｰ", "spec": "", "options": []}, {"name": "ﾊﾝﾏｰ", "spec": "", "options": []}, {"name": "ｾｲﾊﾞｰｿｰ", "spec": "", "options": []}, {"name": "ﾁｯﾌﾟｿｰ", "spec": "", "options": []}, {"name": "100V-3P", "spec": "電工ﾄﾞﾗﾑ (ｱｰｽ,遮断機付き) ／ 延長ｺｰﾄﾞ (ｱｰｽ付き)", "options": [{"label": "電工ﾄﾞﾗﾑ (ｱｰｽ,遮断機付き)", "custom": false}, {"label": "延長ｺｰﾄﾞ (ｱｰｽ付き)", "custom": false}]}, {"name": "ﾁｪｰﾝﾌﾞﾛｯｸ", "spec": "0.75t, 1.2t, 1.6t, 1.6t以上", "options": [{"label": "0.75t", "custom": false}, {"label": "1.2t", "custom": false}, {"label": "1.6t", "custom": false}, {"label": "1.6t以上", "custom": false}]}, {"name": "ﾚﾊﾞｰﾌﾞﾛｯｸ", "spec": "0.75t, 1.2t, 1.6t, 1.6t以上", "options": [{"label": "0.75t", "custom": false}, {"label": "1.2t", "custom": false}, {"label": "1.6t", "custom": false}, {"label": "1.6t以上", "custom": false}]}, {"name": "ｼｬｯｸﾙ", "spec": "0.5t 1t 1.6t 2t", "options": [{"label": "0.5t", "custom": false}, {"label": "1t", "custom": false}, {"label": "1.6t", "custom": false}, {"label": "2t", "custom": false}]}, {"name": "ｼｬｺﾏﾝ", "spec": "小 50 100 200 (　　)", "options": [{"label": "小", "custom": false}, {"label": "50", "custom": false}, {"label": "100", "custom": false}, {"label": "200", "custom": false}, {"label": "自由入力", "custom": true}]}, {"name": "ﾈｼﾞ切り旋盤", "spec": "ﾀﾞｲﾍｯﾄﾞ 8A 10A 15A 20A 25A ／ 32A 40A 50A 65A 80A", "options": [{"label": "ﾀﾞｲﾍｯﾄﾞ 8A 10A 15A 20A 25A", "custom": false}, {"label": "32A 40A 50A 65A 80A", "custom": false}]}, {"name": "ﾊﾟｲﾌﾟ受台", "spec": "", "options": []}, {"name": "脚付ﾊﾞｲｽ", "spec": "", "options": []}, {"name": "ﾁｪｰﾝﾊﾞｲｽ", "spec": "", "options": []}, {"name": "溶接棒", "spec": "軟鋼 高張力 (　　) ／ SUS", "options": [{"label": "軟鋼 高張力 (　　)", "custom": false}, {"label": "SUS", "custom": false}]}, {"name": "TIG溶接棒", "spec": "SS (　　) ／ SUS (　　)", "options": [{"label": "SS (　　)", "custom": false}, {"label": "SUS (　　)", "custom": false}]}, {"name": "溶接面", "spec": "手面 被面 被面自動 ﾍﾙﾒｯﾄ対応", "options": [{"label": "手面", "custom": false}, {"label": "被面", "custom": false}, {"label": "被面自動", "custom": false}, {"label": "ﾍﾙﾒｯﾄ対応", "custom": false}]}, {"name": "ﾎｰｽﾘｰﾙ", "spec": "", "options": []}, {"name": "棒ｸﾞﾗｲﾝﾀﾞｰ", "spec": "超硬ﾊﾞｰ 砥石 (　　)", "options": [{"label": "超硬ﾊﾞｰ", "custom": false}, {"label": "砥石", "custom": false}, {"label": "自由入力", "custom": true}]}, {"name": "砥石", "spec": "ｶｯﾄ刃 砥石 ﾍﾟｰﾊﾟｰ", "options": [{"label": "ｶｯﾄ刃", "custom": false}, {"label": "砥石", "custom": false}, {"label": "ﾍﾟｰﾊﾟｰ", "custom": false}]}, {"name": "電動ﾄﾞﾘﾙ用ｿｹｯﾄ", "spec": "", "options": []}, {"name": "ｲﾝﾊﾟｸﾄﾚﾝﾁ", "spec": "30mm 32mm", "options": [{"label": "30mm", "custom": false}, {"label": "32mm", "custom": false}]}, {"name": "ﾎﾞｯｸｽﾚﾝﾁｾｯﾄ", "spec": "", "options": []}, {"name": "ﾎﾙｿｰ", "spec": "", "options": []}, {"name": "ﾗｲﾄﾎﾞｰﾗｰ", "spec": "18mm", "options": []}, {"name": "ｱﾝｶｰ", "spec": "SUS M10", "options": [{"label": "SUS", "custom": false}, {"label": "M10", "custom": false}]}, {"name": "ﾌﾟﾗｽﾁｯｸﾊﾝﾏｰ", "spec": "", "options": []}, {"name": "ﾊﾞﾝﾄﾞｿｰ", "spec": "100mm 150mm 300mm", "options": [{"label": "100mm", "custom": false}, {"label": "150mm", "custom": false}, {"label": "300mm", "custom": false}]}, {"name": "ﾊﾞﾝﾄﾞｿｰ替刃", "spec": "", "options": []}, {"name": "200V-ﾄﾞﾗﾑ", "spec": "", "options": []}, {"name": "変圧器", "spec": "", "options": []}, {"name": "台付ﾜｲﾔｰ", "spec": "φ6 φ9 φ12 φ14 φ16", "options": [{"label": "φ6", "custom": false}, {"label": "φ9", "custom": false}, {"label": "φ12", "custom": false}, {"label": "φ14", "custom": false}, {"label": "φ16", "custom": false}]}, {"name": "ﾅｲﾛﾝｽﾘﾝｸﾞ", "spec": "", "options": []}, {"name": "ﾛｰﾌﾟ", "spec": "", "options": []}, {"name": "ｹｰﾌﾞﾙ引き", "spec": "", "options": []}, {"name": "ﾊﾟｲﾌﾟﾚﾝﾁ", "spec": "200 250 350 450 600", "options": [{"label": "200", "custom": false}, {"label": "250", "custom": false}, {"label": "350", "custom": false}, {"label": "450", "custom": false}, {"label": "600", "custom": false}]}, {"name": "ﾁｪｰﾝﾚﾝﾁ", "spec": "200 300 450", "options": [{"label": "200", "custom": false}, {"label": "300", "custom": false}, {"label": "450", "custom": false}]}]}, {"category": "手回り工具", "items": [{"name": "ﾓﾝｷｰ ｽﾊﾟﾅ 六角ﾚﾝﾁ ﾀｶﾞﾈ ﾄﾞﾗｲﾊﾞ ﾔｽﾘ ﾍﾟﾝﾁ ﾆｯﾊﾟ", "spec": "", "options": []}, {"name": "ﾊﾞｰﾙ", "spec": "300 500 1000 1500 (　　)", "options": [{"label": "300", "custom": false}, {"label": "500", "custom": false}, {"label": "1000", "custom": false}, {"label": "1500", "custom": false}, {"label": "自由入力", "custom": true}]}, {"name": "ﾊﾟｲﾌﾟｶｯﾀ", "spec": "", "options": []}, {"name": "ﾊﾞｶ棒", "spec": "", "options": []}, {"name": "ｼﾉ", "spec": "", "options": []}, {"name": "ﾌﾞﾗｼ", "spec": "真鍮 SUS 塩ﾋﾞ", "options": [{"label": "真鍮", "custom": false}, {"label": "SUS", "custom": false}, {"label": "塩ﾋﾞ", "custom": false}]}, {"name": "ﾀｯﾌﾟ", "spec": "M6 M8 M10 M12 M16 (　　)", "options": [{"label": "M6", "custom": false}, {"label": "M8", "custom": false}, {"label": "M10", "custom": false}, {"label": "M12", "custom": false}, {"label": "M16", "custom": false}, {"label": "自由入力", "custom": true}]}, {"name": "ﾀﾞｲｽ", "spec": "M6 M8 M10 M12 M16 (　　)", "options": [{"label": "M6", "custom": false}, {"label": "M8", "custom": false}, {"label": "M10", "custom": false}, {"label": "M12", "custom": false}, {"label": "M16", "custom": false}, {"label": "自由入力", "custom": true}]}, {"name": "ﾗﾁｪｯﾄﾚﾝﾁ", "spec": "～26 (　　)", "options": [{"label": "～26", "custom": false}, {"label": "自由入力", "custom": true}]}, {"name": "ｸﾞﾘｰｽﾎﾟﾝﾌﾟ", "spec": "ｸﾞﾘｰｽ 2本", "options": [{"label": "ｸﾞﾘｰｽ", "custom": false}, {"label": "2本", "custom": false}]}, {"name": "ｺｰｷﾝｸﾞｶﾞﾝ", "spec": "ｸﾘｱ 2本", "options": [{"label": "ｸﾘｱ", "custom": false}, {"label": "2本", "custom": false}]}, {"name": "ｽﾊﾟﾅ大", "spec": "30mm 32mm", "options": [{"label": "30mm", "custom": false}, {"label": "32mm", "custom": false}]}, {"name": "ｽﾅｯﾌﾟﾘﾝｸﾞﾌﾟﾗｲﾔｰ", "spec": "", "options": []}, {"name": "ﾌﾟｰﾘｰ抜き", "spec": "φ100 φ150 φ250 φ350", "options": [{"label": "φ100", "custom": false}, {"label": "φ150", "custom": false}, {"label": "φ250", "custom": false}, {"label": "φ350", "custom": false}]}]}, {"category": "消耗品", "items": [{"name": "ﾋﾞﾆﾙﾃｰﾌﾟ", "spec": "", "options": []}, {"name": "養生ﾃｰﾌﾟ", "spec": "", "options": []}, {"name": "ｼｰﾙﾃｰﾌﾟ", "spec": "", "options": []}, {"name": "ﾍﾙﾒｼｰﾙ", "spec": "", "options": []}, {"name": "番線", "spec": "土木用 電気用", "options": [{"label": "土木用", "custom": false}, {"label": "電気用", "custom": false}]}, {"name": "ｺﾞﾐ袋", "spec": "", "options": []}, {"name": "ｶﾞﾗ袋", "spec": "", "options": []}, {"name": "ﾘｰｸﾁｪｯｸ", "spec": "ﾘｰｸﾁｪｯｶｰ 石鹸水", "options": [{"label": "ﾘｰｸﾁｪｯｶｰ", "custom": false}, {"label": "石鹸水", "custom": false}]}, {"name": "潤滑油", "spec": "", "options": []}, {"name": "ｽﾃﾝｺﾛﾘﾝ", "spec": "", "options": []}, {"name": "ﾊﾟｰﾂｸﾘﾅｰ", "spec": "", "options": []}, {"name": "油分解ｽﾌﾟﾚｰ", "spec": "ｼﾝﾌﾟﾙｸﾞﾘｰﾝ", "options": []}]}, {"category": "測定器具", "items": [{"name": "水準器", "spec": "小 大 配管用", "options": [{"label": "小", "custom": false}, {"label": "大", "custom": false}, {"label": "配管用", "custom": false}]}, {"name": "ﾁﾙﾃｨﾝｸﾞﾚﾍﾞﾙ", "spec": "", "options": []}, {"name": "ｽﾄﾚｯﾁ", "spec": "300 600 1000 1500 2000", "options": [{"label": "300", "custom": false}, {"label": "600", "custom": false}, {"label": "1000", "custom": false}, {"label": "1500", "custom": false}, {"label": "2000", "custom": false}]}, {"name": "隙間ｹﾞｰｼﾞ", "spec": "", "options": []}, {"name": "下げ振り", "spec": "", "options": []}, {"name": "ｻｼｶﾞﾈ", "spec": "200 300 450", "options": [{"label": "200", "custom": false}, {"label": "300", "custom": false}, {"label": "450", "custom": false}]}, {"name": "ﾚｰｻﾞｰ芯出し", "spec": "", "options": []}, {"name": "ﾚｰｻﾞｰﾚﾍﾞﾙ", "spec": "", "options": []}, {"name": "水糸", "spec": "", "options": []}, {"name": "ﾃｽﾀｰ", "spec": "", "options": []}, {"name": "墨つぼ", "spec": "", "options": []}, {"name": "ﾁｪｰｸﾗｲﾝ", "spec": "", "options": []}]}, {"category": "特殊準備品", "items": [{"name": "SUS養生板", "spec": "", "options": []}, {"name": "ｺﾝﾊﾟﾈ", "spec": "9mm (　　)", "options": [{"label": "9mm", "custom": false}, {"label": "自由入力", "custom": true}]}, {"name": "ﾍﾞﾆﾔ養生板", "spec": "木 ﾌﾟﾗ", "options": [{"label": "木", "custom": false}, {"label": "ﾌﾟﾗ", "custom": false}]}, {"name": "ｽﾋﾟｰﾄﾞﾛｰﾗｰ", "spec": "", "options": []}, {"name": "電動ｳｨﾝﾁ", "spec": "", "options": []}, {"name": "平台車", "spec": "", "options": []}, {"name": "ﾌﾟﾗ台車", "spec": "", "options": []}, {"name": "手押し台車", "spec": "", "options": []}, {"name": "高所作業車", "spec": "TR12 TB8 TB6(　　) TB4", "options": [{"label": "TR12", "custom": false}, {"label": "TB8", "custom": false}, {"label": "TB6(　　)", "custom": false}, {"label": "TB4", "custom": false}]}]}];
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+const CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>';
 
-const state = {}; // key "c-i" -> {checked, qty}
-DATA.forEach((cat,ci)=>cat.items.forEach((it,ii)=>{ state[ci+'-'+ii] = {checked:false, qty:1}; }));
+// state[itemKey] = { hasOptions, expanded, checked, qty, opts:[{checked,qty,customText}] }
+const state = {};
+DATA.forEach((cat,ci)=>cat.items.forEach((it,ii)=>{
+  const key = ci+'-'+ii;
+  const hasOptions = it.options && it.options.length>0;
+  state[key] = {
+    hasOptions,
+    expanded:false,
+    checked:false,
+    qty:1,
+    opts: hasOptions ? it.options.map(()=>({checked:false, qty:1, customText:''})) : []
+  };
+}));
 
 const mainList = document.getElementById('mainList');
 const catChips = document.getElementById('catChips');
 
 function render(){
   mainList.innerHTML = '';
-  catChips.innerHTML = '<span class="chip active" data-cat="all">すべて</span>';
+  catChips.innerHTML = '<span class="chip-cat active" data-cat="all">すべて</span>';
   DATA.forEach((cat,ci)=>{
     const chip = document.createElement('span');
-    chip.className='chip'; chip.dataset.cat=ci; chip.textContent=cat.category;
+    chip.className='chip-cat'; chip.dataset.cat=ci; chip.textContent=cat.category;
     catChips.appendChild(chip);
 
     const card = document.createElement('div');
     card.className='category'; card.dataset.cat=ci;
     const head = document.createElement('div');
     head.className='cat-head';
-    head.innerHTML = `<div class="title"><span class="name">${cat.category}</span><span class="count zero" id="cnt-${ci}">0</span></div>
-      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>`;
+    head.innerHTML = `<div class="title"><span class="name">${cat.category}</span><span class="count zero" id="cnt-${ci}">0</span></div>${CHEV_SVG.replace('svg viewBox','svg class="chev" viewBox')}`;
     head.addEventListener('click', ()=> card.classList.toggle('collapsed'));
     card.appendChild(head);
 
@@ -267,55 +316,156 @@ function render(){
     body.className='cat-body';
     cat.items.forEach((it,ii)=>{
       const key = ci+'-'+ii;
+      const s = state[key];
       const row = document.createElement('div');
       row.className='item-row'; row.dataset.key=key; row.dataset.name=it.name.toLowerCase();
-      row.innerHTML = `
-        <div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-        <div class="item-text"><div class="item-name">${it.name}</div>${it.spec?`<div class="item-spec">${it.spec}</div>`:''}</div>
-        <div class="qty-wrap">
-          <button class="qty-btn" data-act="minus">−</button>
-          <input class="qty-val" type="number" min="1" value="1" inputmode="numeric">
-          <button class="qty-btn" data-act="plus">＋</button>
-        </div>`;
-      row.addEventListener('click',(e)=>{
-        if(e.target.closest('.qty-wrap')) return;
-        toggle(key);
-      });
-      row.querySelector('[data-act="minus"]').addEventListener('click',(e)=>{e.stopPropagation(); changeQty(key,-1);});
-      row.querySelector('[data-act="plus"]').addEventListener('click',(e)=>{e.stopPropagation(); changeQty(key,1);});
-      const qtyInput = row.querySelector('.qty-val');
-      qtyInput.addEventListener('click', e=>e.stopPropagation());
-      qtyInput.addEventListener('change', ()=>{
-        let v = parseInt(qtyInput.value)||1; if(v<1) v=1;
-        state[key].qty = v; qtyInput.value = v;
-      });
-      body.appendChild(row);
+
+      if(s.hasOptions){
+        row.innerHTML = `
+          <div class="box">${CHECK_SVG}</div>
+          <div class="item-text">
+            <div class="item-name">${it.name}</div>
+            <div class="item-hint" id="hint-${key}">仕様を選んでください</div>
+          </div>
+          <span class="badge-count" id="badge-${key}" style="display:none;">0</span>
+          ${CHEV_SVG.replace('svg viewBox','svg class="chev-mini" viewBox')}
+        `;
+        row.addEventListener('click', ()=> toggleExpand(key));
+        body.appendChild(row);
+
+        const panel = document.createElement('div');
+        panel.className='opt-panel'; panel.id='panel-'+key;
+        const list = document.createElement('div'); list.className='opt-list';
+        it.options.forEach((opt,oi)=>{
+          const optRow = document.createElement('div');
+          optRow.className='opt-item'; optRow.dataset.key=key; optRow.dataset.oi=oi;
+          optRow.innerHTML = `
+            <div class="opt-chip-box">${CHECK_SVG}</div>
+            <div class="opt-label">${opt.label}</div>
+            ${opt.custom ? `<input type="text" class="opt-custom-input enabled" placeholder="内容を入力" />` : ''}
+            <div class="qty-wrap opt-qty">
+              <button class="qty-btn" data-act="minus">−</button>
+              <input class="qty-val" type="number" min="1" value="1" inputmode="numeric">
+              <button class="qty-btn" data-act="plus">＋</button>
+            </div>`;
+          optRow.addEventListener('click',(e)=>{
+            if(e.target.closest('.opt-qty') || e.target.closest('.opt-custom-input')) return;
+            toggleOption(key, oi);
+          });
+          const qi = optRow.querySelector('.qty-val');
+          optRow.querySelector('[data-act="minus"]').addEventListener('click',(e)=>{e.stopPropagation(); changeOptQty(key,oi,-1);});
+          optRow.querySelector('[data-act="plus"]').addEventListener('click',(e)=>{e.stopPropagation(); changeOptQty(key,oi,1);});
+          qi.addEventListener('click', e=>e.stopPropagation());
+          qi.addEventListener('change', ()=>{
+            let v = parseInt(qi.value)||1; if(v<1) v=1;
+            state[key].opts[oi].qty = v; qi.value = v;
+          });
+          const ci2 = optRow.querySelector('.opt-custom-input');
+          if(ci2){
+            ci2.addEventListener('click', e=>e.stopPropagation());
+            ci2.addEventListener('input', ()=>{ state[key].opts[oi].customText = ci2.value; });
+          }
+          list.appendChild(optRow);
+        });
+        panel.appendChild(list);
+        body.appendChild(panel);
+      } else {
+        row.innerHTML = `
+          <div class="box">${CHECK_SVG}</div>
+          <div class="item-text"><div class="item-name">${it.name}</div>${it.spec?`<div class="item-spec">${it.spec}</div>`:''}</div>
+          <div class="qty-wrap" style="opacity:0;pointer-events:none;">
+            <button class="qty-btn" data-act="minus">−</button>
+            <input class="qty-val" type="number" min="1" value="1" inputmode="numeric">
+            <button class="qty-btn" data-act="plus">＋</button>
+          </div>`;
+        row.addEventListener('click',(e)=>{
+          if(e.target.closest('.qty-wrap')) return;
+          toggleSimple(key);
+        });
+        const qtyWrap = row.querySelector('.qty-wrap');
+        row.querySelector('[data-act="minus"]').addEventListener('click',(e)=>{e.stopPropagation(); changeSimpleQty(key,-1);});
+        row.querySelector('[data-act="plus"]').addEventListener('click',(e)=>{e.stopPropagation(); changeSimpleQty(key,1);});
+        const qtyInput = row.querySelector('.qty-val');
+        qtyInput.addEventListener('click', e=>e.stopPropagation());
+        qtyInput.addEventListener('change', ()=>{
+          let v = parseInt(qtyInput.value)||1; if(v<1) v=1;
+          state[key].qty = v; qtyInput.value = v;
+        });
+        body.appendChild(row);
+      }
     });
     card.appendChild(body);
     mainList.appendChild(card);
   });
 }
 
-function toggle(key){
-  state[key].checked = !state[key].checked;
-  const row = document.querySelector(`.item-row[data-key="${key}"]`);
-  row.classList.toggle('selected', state[key].checked);
-  if(state[key].checked){
-    const qi = row.querySelector('.qty-val');
-    qi.value = state[key].qty;
-  }
+function toggleExpand(key){
+  const s = state[key];
+  s.expanded = !s.expanded;
+  document.querySelector(`.item-row[data-key="${key}"]`).classList.toggle('expanded', s.expanded);
+  document.getElementById('panel-'+key).classList.toggle('show', s.expanded);
+}
+
+function toggleOption(key, oi){
+  const s = state[key];
+  const o = s.opts[oi];
+  o.checked = !o.checked;
+  const optRow = document.querySelector(`.opt-item[data-key="${key}"][data-oi="${oi}"]`);
+  optRow.classList.toggle('on', o.checked);
+  refreshItemBadge(key);
   updateCounts();
 }
-function changeQty(key,d){
-  if(!state[key].checked) return;
-  state[key].qty = Math.max(1, state[key].qty + d);
-  document.querySelector(`.item-row[data-key="${key}"] .qty-val`).value = state[key].qty;
+function changeOptQty(key, oi, d){
+  const s = state[key];
+  if(!s.opts[oi].checked) return;
+  s.opts[oi].qty = Math.max(1, s.opts[oi].qty + d);
+  document.querySelector(`.opt-item[data-key="${key}"][data-oi="${oi}"] .qty-val`).value = s.opts[oi].qty;
 }
+function refreshItemBadge(key){
+  const s = state[key];
+  const n = s.opts.filter(o=>o.checked).length;
+  const badge = document.getElementById('badge-'+key);
+  const row = document.querySelector(`.item-row[data-key="${key}"]`);
+  const hint = document.getElementById('hint-'+key);
+  if(n>0){
+    badge.style.display=''; badge.textContent = n+'件';
+    row.classList.add('selected');
+    hint.textContent = '選択済み';
+  } else {
+    badge.style.display='none';
+    row.classList.remove('selected');
+    hint.textContent = '仕様を選んでください';
+  }
+}
+
+function toggleSimple(key){
+  const s = state[key];
+  s.checked = !s.checked;
+  const row = document.querySelector(`.item-row[data-key="${key}"]`);
+  row.classList.toggle('selected', s.checked);
+  const qw = row.querySelector('.qty-wrap');
+  qw.style.opacity = s.checked ? '1':'0';
+  qw.style.pointerEvents = s.checked ? 'auto':'none';
+  if(s.checked) row.querySelector('.qty-val').value = s.qty;
+  updateCounts();
+}
+function changeSimpleQty(key,d){
+  const s = state[key];
+  if(!s.checked) return;
+  s.qty = Math.max(1, s.qty + d);
+  document.querySelector(`.item-row[data-key="${key}"] .qty-val`).value = s.qty;
+}
+
 function updateCounts(){
   let total = 0;
   DATA.forEach((cat,ci)=>{
     let c = 0;
-    cat.items.forEach((it,ii)=>{ if(state[ci+'-'+ii].checked) c++; });
+    cat.items.forEach((it,ii)=>{
+      const key = ci+'-'+ii;
+      const s = state[key];
+      if(s.hasOptions){ c += s.opts.filter(o=>o.checked).length; }
+      else if(s.checked){ c += 1; }
+    });
     total += c;
     const el = document.getElementById('cnt-'+ci);
     el.textContent = c; el.classList.toggle('zero', c===0);
@@ -328,7 +478,7 @@ function updateCounts(){
 let activeCat = 'all';
 document.getElementById('searchInput').addEventListener('input', applyFilter);
 catChips.addEventListener('click', (e)=>{
-  const chip = e.target.closest('.chip'); if(!chip) return;
+  const chip = e.target.closest('.chip-cat'); if(!chip) return;
   [...catChips.children].forEach(c=>c.classList.remove('active'));
   chip.classList.add('active');
   activeCat = chip.dataset.cat;
@@ -344,6 +494,9 @@ function applyFilter(){
       const nameMatch = !q || row.dataset.name.includes(q) || row.textContent.toLowerCase().includes(q);
       const show = catMatch && nameMatch;
       row.classList.toggle('hidden', !show);
+      const key = row.dataset.key;
+      const panel = document.getElementById('panel-'+key);
+      if(panel) panel.classList.toggle('hidden', !show);
       if(show) anyVisible = true;
     });
     card.style.display = anyVisible ? '' : 'none';
@@ -352,11 +505,12 @@ function applyFilter(){
 }
 
 document.getElementById('clearBtn').addEventListener('click', ()=>{
-  Object.keys(state).forEach(k=>{ state[k].checked=false; state[k].qty=1; });
-  document.querySelectorAll('.item-row').forEach(r=>{
-    r.classList.remove('selected');
-    r.querySelector('.qty-val').value = 1;
+  Object.keys(state).forEach(k=>{
+    const s = state[k];
+    s.checked=false; s.qty=1; s.expanded=false;
+    s.opts.forEach(o=>{ o.checked=false; o.qty=1; o.customText=''; });
   });
+  render();
   updateCounts();
 });
 
@@ -366,26 +520,39 @@ document.getElementById('makeListBtn').addEventListener('click', buildSummary);
 document.getElementById('backBtn').addEventListener('click', ()=> summaryEl.classList.remove('show'));
 
 function buildSummary(){
-  const today = new Date();
   const dInput = document.getElementById('projDate');
   if(!dInput.value){
-    dInput.value = today.toISOString().slice(0,10);
+    dInput.value = new Date().toISOString().slice(0,10);
   }
   const body = document.getElementById('sumBody');
   body.innerHTML = '';
   DATA.forEach((cat,ci)=>{
-    const rows = cat.items.map((it,ii)=>({it, key:ci+'-'+ii})).filter(x=>state[x.key].checked);
-    if(rows.length===0) return;
+    const lines = [];
+    cat.items.forEach((it,ii)=>{
+      const key = ci+'-'+ii;
+      const s = state[key];
+      if(s.hasOptions){
+        s.opts.forEach((o,oi)=>{
+          if(!o.checked) return;
+          const opt = it.options[oi];
+          const label = opt.custom ? (o.customText.trim() ? o.customText.trim() : '自由入力') : opt.label;
+          lines.push({name:it.name, spec:label, qty:o.qty});
+        });
+      } else if(s.checked){
+        lines.push({name:it.name, spec:it.spec, qty:s.qty});
+      }
+    });
+    if(lines.length===0) return;
     const wrap = document.createElement('div');
     wrap.className='sum-cat';
     const h3 = document.createElement('h3'); h3.textContent = cat.category;
     wrap.appendChild(h3);
     const table = document.createElement('table'); table.className='sum-table';
-    rows.forEach(r=>{
+    lines.forEach(r=>{
       const tr = document.createElement('tr');
       tr.innerHTML = `<td class="chk">✔</td>
-        <td><div class="nm">${r.it.name}</div>${r.it.spec?`<div class="sp">${r.it.spec}</div>`:''}</td>
-        <td class="qty">${state[r.key].qty} 点</td>`;
+        <td><div class="nm">${r.name}</div>${r.spec?`<div class="sp">${r.spec}</div>`:''}</td>
+        <td class="qty">${r.qty} 点</td>`;
       table.appendChild(tr);
     });
     wrap.appendChild(table);
@@ -400,18 +567,30 @@ document.getElementById('copyBtn').addEventListener('click', ()=>{
   const proj = document.getElementById('projName').value || '（工事名未入力）';
   const date = document.getElementById('projDate').value || '';
   const person = document.getElementById('projPerson').value || '';
-  let lines = [`【工事準備リスト】`, `工事名: ${proj}`, `日付: ${date}`, `準備者: ${person}`, ''];
+  let out = [`【工事準備リスト】`, `工事名: ${proj}`, `日付: ${date}`, `準備者: ${person}`, ''];
   DATA.forEach((cat,ci)=>{
-    const rows = cat.items.map((it,ii)=>({it, key:ci+'-'+ii})).filter(x=>state[x.key].checked);
-    if(rows.length===0) return;
-    lines.push(`■ ${cat.category}`);
-    rows.forEach(r=>{
-      const spec = r.it.spec ? `（${r.it.spec}）` : '';
-      lines.push(`□ ${r.it.name}${spec} ×${state[r.key].qty}`);
+    const lines = [];
+    cat.items.forEach((it,ii)=>{
+      const key = ci+'-'+ii;
+      const s = state[key];
+      if(s.hasOptions){
+        s.opts.forEach((o,oi)=>{
+          if(!o.checked) return;
+          const opt = it.options[oi];
+          const label = opt.custom ? (o.customText.trim() ? o.customText.trim() : '自由入力') : opt.label;
+          lines.push(`□ ${it.name}（${label}） ×${o.qty}`);
+        });
+      } else if(s.checked){
+        const spec = it.spec ? `（${it.spec}）` : '';
+        lines.push(`□ ${it.name}${spec} ×${s.qty}`);
+      }
     });
-    lines.push('');
+    if(lines.length===0) return;
+    out.push(`■ ${cat.category}`);
+    out.push(...lines);
+    out.push('');
   });
-  const text = lines.join('\n');
+  const text = out.join('\n');
   const finish = ()=>{
     const btn = document.getElementById('copyBtn');
     btn.classList.add('copied'); btn.textContent = '✔ コピーしました';
