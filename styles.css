@@ -224,7 +224,9 @@ table.sum-table .sp{color:var(--gray-500); font-size:11px; margin-top:1px;}
   table.sum-table td{padding:1.5px 3px;}
   table.sum-table td.chk{width:12px; font-size:10px;}
   table.sum-table tr{break-inside:avoid; page-break-inside:avoid;}
-  table.sum-table td:last-child{display:flex; flex-wrap:wrap; align-items:baseline; column-gap:4px;}
+  table.sum-table td:last-child:not(.multi){display:flex; flex-wrap:wrap; align-items:baseline; column-gap:4px;}
   table.sum-table .nm{white-space:nowrap;}
   table.sum-table .sp{font-size:9.5px; margin-top:0; white-space:nowrap;}
+  table.sum-table td.multi .sp{display:block; margin-top:1px; padding-left:11px; position:relative; white-space:normal;}
+  table.sum-table td.multi .sp::before{content:"・"; position:absolute; left:0;}
 }

@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="準備リスト">
 <meta name="theme-color" content="#1d4ed8">
-<title>工事準備リスト作成</title>
+<title>工事準備リスト</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -18,7 +18,7 @@
 <body>
 
 <header>
-  <h1>🛠 工事準備リスト作成</h1>
+  <h1>🛠 工事準備リスト</h1>
   <div class="sub">品名を選択 → 仕様を選択 → 数量を入力</div>
 </header>
 
@@ -340,8 +340,9 @@ function buildSummary(){
     lines.forEach(r=>{
       const tr = document.createElement('tr');
       const specHtml = r.specs.map(sp=>`<div class="sp">${sp.label?sp.label+' ':''}×${sp.qty}</div>`).join('');
+      const multiClass = r.specs.length>1 ? ' multi' : '';
       tr.innerHTML = `<td class="chk">✔</td>
-        <td><div class="nm">${r.name}</div>${specHtml}</td>`;
+        <td class="${multiClass.trim()}"><div class="nm">${r.name}</div>${specHtml}</td>`;
       table.appendChild(tr);
     });
     wrap.appendChild(table);
