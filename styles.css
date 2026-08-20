@@ -207,10 +207,18 @@ table.sum-table .sp{color:var(--gray-500); font-size:11px; margin-top:1px;}
 .toast.show{opacity:1;}
 
 @media print{
+  @page{ size:A4; margin:12mm; }
   body *{visibility:hidden;}
   #summary, #summary *{visibility:visible;}
-  #summary{position:absolute; inset:auto; top:0; left:0; display:block !important; background:#fff;}
+  #summary{position:static; display:block !important; background:#fff; height:auto;}
   .sum-head, .sum-actions{display:none !important;}
-  .sum-scroll{overflow:visible; padding:0;}
-  .sum-card{box-shadow:none; border:none; max-width:100%;}
+  .sum-scroll{overflow:visible; padding:0; height:auto;}
+  .sum-card{box-shadow:none; border:none; max-width:100%; width:100%; padding:0; margin:0;}
+  .meta-grid{margin-bottom:10px;}
+  .sum-title{font-size:15px; margin:0 0 8px;}
+  .sum-cat{margin-bottom:8px; break-inside:avoid; page-break-inside:avoid;}
+  .sum-cat h3{font-size:11px; padding-bottom:3px; margin:0 0 4px;}
+  table.sum-table{font-size:10.5px;}
+  table.sum-table td{padding:3px 4px;}
+  table.sum-table tr{break-inside:avoid; page-break-inside:avoid;}
 }
