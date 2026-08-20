@@ -578,11 +578,11 @@ document.getElementById('copyBtn').addEventListener('click', ()=>{
           if(!o.checked) return;
           const opt = it.options[oi];
           const label = opt.custom ? (o.customText.trim() ? o.customText.trim() : '自由入力') : opt.label;
-          lines.push(`□ ${it.name}（${label}） ×${o.qty}`);
+          lines.push(`・ ${it.name}（${label}） ×${o.qty}`);
         });
       } else if(s.checked){
         const spec = it.spec ? `（${it.spec}）` : '';
-        lines.push(`□ ${it.name}${spec} ×${s.qty}`);
+        lines.push(`・ ${it.name}${spec} ×${s.qty}`);
       }
     });
     if(lines.length===0) return;
