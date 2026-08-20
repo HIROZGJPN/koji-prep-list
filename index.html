@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="準備リスト">
+<meta name="theme-color" content="#1d4ed8">
+<title>工事準備リスト作成</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-dark:#1e3a8a; --blue-light:#eff6ff;
+    --gray-50:#f8fafc; --gray-100:#f1f5f9; --gray-200:#e2e8f0; --gray-300:#cbd5e1;
+    --gray-500:#64748b; --gray-700:#334155; --gray-900:#0f172a;
+    --green:#16a34a; --red:#dc2626;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--gray-100); color:var(--gray-900);
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:96px;
+  }
+  header{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(135deg,var(--blue),var(--blue-dark));
+    color:#fff; padding:14px 16px 12px;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  header h1{margin:0; font-size:17px; font-weight:700; letter-spacing:.02em;}
+  header .sub{font-size:11.5px; opacity:.85; margin-top:2px;}
+  .search-wrap{padding:10px 12px 4px; background:var(--gray-100); position:sticky; top:56px; z-index:19;}
+  .search-box{
+    display:flex; align-items:center; background:#fff; border-radius:12px;
+    border:1px solid var(--gray-200); padding:9px 12px; box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  .search-box input{
+    border:none; outline:none; flex:1; font-size:15px; background:transparent; color:var(--gray-900);
+  }
+  .search-box svg{width:16px;height:16px;color:var(--gray-500);margin-right:8px;flex-shrink:0;}
+  .toolbar{
+    display:flex; gap:8px; padding:8px 12px 2px; overflow-x:auto;
+  }
+  .chip{
+    flex-shrink:0; font-size:12.5px; padding:6px 12px; border-radius:999px;
+    background:#fff; border:1px solid var(--gray-200); color:var(--gray-700); font-weight:600;
+    white-space:nowrap;
+  }
+  .chip.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+  main{padding:6px 10px 0;}
+  .category{
+    background:#fff; border-radius:14px; margin:10px 0; overflow:hidden;
+    box-shadow:0 1px 3px rgba(0,0,0,.06); border:1px solid var(--gray-200);
+  }
+  .cat-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px; cursor:pointer; user-select:none;
+    background:var(--gray-50);
+  }
+  .cat-head .title{display:flex; align-items:center; gap:8px;}
+  .cat-head .name{font-size:14.5px; font-weight:700; color:var(--gray-900);}
+  .cat-head .count{
+    font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-light);
+    border-radius:999px; padding:2px 8px; min-width:20px; text-align:center;
+  }
+  .cat-head .count.zero{display:none;}
+  .chev{width:18px;height:18px;color:var(--gray-500); transition:transform .2s;}
+  .category.collapsed .chev{transform:rotate(-90deg);}
+  .cat-body{}
+  .category.collapsed .cat-body{display:none;}
+  .item-row{
+    display:flex; align-items:center; gap:10px; padding:11px 14px;
+    border-top:1px solid var(--gray-100); cursor:pointer;
+  }
+  .item-row.hidden{display:none;}
+  .item-row.selected{background:var(--blue-light);}
+  .box{
+    width:23px;height:23px;border-radius:7px;border:2px solid var(--gray-300);
+    flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    background:#fff; transition:.12s;
+  }
+  .item-row.selected .box{background:var(--blue); border-color:var(--blue);}
+  .box svg{width:15px;height:15px;color:#fff; opacity:0; transform:scale(.5); transition:.12s;}
+  .item-row.selected .box svg{opacity:1; transform:scale(1);}
+  .item-text{flex:1; min-width:0;}
+  .item-name{font-size:14.5px; font-weight:600; color:var(--gray-900); line-height:1.3;}
+  .item-spec{font-size:11.5px; color:var(--gray-500); margin-top:1px; line-height:1.35;}
+  .qty-wrap{
+    display:flex; align-items:center; gap:0; flex-shrink:0;
+    background:var(--gray-100); border-radius:9px; overflow:hidden;
+    opacity:0; pointer-events:none; transform:scale(.9); transition:.12s;
+  }
+  .item-row.selected .qty-wrap{opacity:1; pointer-events:auto; transform:scale(1);}
+  .qty-btn{
+    width:30px;height:30px; border:none; background:transparent; font-size:17px; font-weight:700;
+    color:var(--blue); display:flex; align-items:center; justify-content:center;
+  }
+  .qty-btn:active{background:var(--gray-200);}
+  .qty-val{
+    width:30px; text-align:center; font-size:14px; font-weight:700; color:var(--gray-900);
+    -moz-appearance:textfield;
+  }
+  .qty-val::-webkit-outer-spin-button,.qty-val::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .empty-msg{padding:24px; text-align:center; color:var(--gray-500); font-size:13px;}
+
+  .footer-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:30;
+    background:#fff; border-top:1px solid var(--gray-200);
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    box-shadow:0 -2px 10px rgba(0,0,0,.06);
+    display:flex; gap:10px; align-items:center;
+  }
+  .footer-bar .selcount{font-size:12.5px; color:var(--gray-700); flex-shrink:0;}
+  .footer-bar .selcount b{color:var(--blue); font-size:15px;}
+  .btn-primary{
+    flex:1; background:var(--blue); color:#fff; border:none; border-radius:12px;
+    padding:13px; font-size:15px; font-weight:700; box-shadow:0 2px 6px rgba(29,78,216,.35);
+  }
+  .btn-primary:disabled{background:var(--gray-300); box-shadow:none;}
+  .btn-clear{
+    flex-shrink:0; background:none; border:1px solid var(--gray-300); color:var(--gray-500);
+    border-radius:12px; padding:12px 12px; font-size:12px; font-weight:600;
+  }
+
+  /* summary screen */
+  #summary{
+    position:fixed; inset:0; background:var(--gray-100); z-index:50;
+    display:none; flex-direction:column;
+  }
+  #summary.show{display:flex;}
+  .sum-head{
+    background:linear-gradient(135deg,var(--blue),var(--blue-dark)); color:#fff;
+    padding:14px 16px; display:flex; align-items:center; gap:10px; flex-shrink:0;
+  }
+  .sum-head button{
+    background:rgba(255,255,255,.18); border:none; color:#fff; border-radius:9px;
+    width:34px;height:34px; font-size:18px; display:flex; align-items:center; justify-content:center;
+  }
+  .sum-head h2{margin:0; font-size:15.5px; font-weight:700; flex:1;}
+  .sum-scroll{flex:1; overflow-y:auto; padding:14px;}
+  .sum-card{
+    background:#fff; border-radius:14px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.06);
+    border:1px solid var(--gray-200); max-width:640px; margin:0 auto;
+  }
+  .meta-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
+  .meta-field{display:flex; flex-direction:column; gap:3px;}
+  .meta-field.full{grid-column:1/-1;}
+  .meta-field label{font-size:10.5px; color:var(--gray-500); font-weight:700;}
+  .meta-field input{
+    border:1px solid var(--gray-200); border-radius:8px; padding:7px 9px; font-size:13.5px;
+    background:var(--gray-50); color:var(--gray-900);
+  }
+  .sum-title{font-size:16px; font-weight:800; text-align:center; margin:2px 0 12px; color:var(--gray-900);}
+  .sum-cat{margin-bottom:14px;}
+  .sum-cat h3{
+    font-size:12.5px; font-weight:800; color:var(--blue); border-bottom:2px solid var(--blue-light);
+    padding-bottom:5px; margin:0 0 6px;
+  }
+  table.sum-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  table.sum-table td{padding:6px 4px; border-bottom:1px solid var(--gray-100); vertical-align:top;}
+  table.sum-table td.chk{width:20px; color:var(--green); font-weight:800; font-size:13px;}
+  table.sum-table td.qty{width:46px; text-align:right; font-weight:700; white-space:nowrap;}
+  table.sum-table .nm{font-weight:700; color:var(--gray-900);}
+  table.sum-table .sp{color:var(--gray-500); font-size:11px; margin-top:1px;}
+  .sum-actions{
+    flex-shrink:0; padding:10px 12px calc(10px + env(safe-area-inset-bottom)); background:#fff;
+    border-top:1px solid var(--gray-200); display:flex; gap:8px;
+  }
+  .btn-outline{
+    flex:1; background:#fff; border:1.5px solid var(--blue); color:var(--blue); border-radius:12px;
+    padding:12px; font-size:13.5px; font-weight:700;
+  }
+  .btn-outline.copied{background:var(--green); border-color:var(--green); color:#fff;}
+  .toast{
+    position:fixed; left:50%; bottom:110px; transform:translateX(-50%);
+    background:var(--gray-900); color:#fff; padding:9px 16px; border-radius:999px; font-size:12.5px;
+    z-index:60; opacity:0; pointer-events:none; transition:.2s;
+  }
+  .toast.show{opacity:1;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #summary, #summary *{visibility:visible;}
+    #summary{position:absolute; inset:auto; top:0; left:0; display:block !important; background:#fff;}
+    .sum-head, .sum-actions{display:none !important;}
+    .sum-scroll{overflow:visible; padding:0;}
+    .sum-card{box-shadow:none; border:none; max-width:100%;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🛠 工事準備リスト作成</h1>
+  <div class="sub">道具をタップして選択 → 数量を入力 → リストを作成</div>
+</header>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="道具名で検索..." autocomplete="off">
+  </div>
+  <div class="toolbar" id="catChips"></div>
+</div>
+
+<main id="mainList"></main>
+
+<div class="footer-bar">
+  <div class="selcount"><b id="selCountNum">0</b>点選択中</div>
+  <button class="btn-clear" id="clearBtn">全解除</button>
+  <button class="btn-primary" id="makeListBtn" disabled>準備リストを作成</button>
+</div>
+
+<div id="summary">
+  <div class="sum-head">
+    <button id="backBtn">←</button>
+    <h2>準備リスト</h2>
+  </div>
+  <div class="sum-scroll">
+    <div class="sum-card">
+      <div class="meta-grid">
+        <div class="meta-field"><label>工事名</label><input type="text" id="projName" placeholder="○○工事"></div>
+        <div class="meta-field"><label>日付</label><input type="date" id="projDate"></div>
+        <div class="meta-field full"><label>準備者</label><input type="text" id="projPerson" placeholder="氏名"></div>
+      </div>
+      <div class="sum-title" id="sumTitle">工事準備リスト</div>
+      <div id="sumBody"></div>
+    </div>
+  </div>
+  <div class="sum-actions">
+    <button class="btn-outline" id="copyBtn">📋 テキストをコピー</button>
+    <button class="btn-outline" id="printBtn">🖨 印刷 / PDF保存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = [{"category": "安全対策用品", "items": [{"name": "安全帯", "spec": "ｼﾝｸﾞﾙ ﾀﾞﾌﾞﾙ"}, {"name": "ﾊｰﾈｽ", "spec": "ｼﾝｸﾞﾙ ﾀﾞﾌﾞﾙ"}, {"name": "保護ﾒｶﾞﾈ", "spec": ""}, {"name": "上履き", "spec": ""}, {"name": "ﾋﾞﾆｰﾙ手袋", "spec": ""}, {"name": "清掃用具", "spec": "ﾎｳｷ ちりとり"}, {"name": "ｳｴｽ", "spec": ""}, {"name": "ﾊﾝﾄﾞﾌﾞﾛﾜ", "spec": ""}, {"name": "酸素濃度計", "spec": ""}, {"name": "足場材", "spec": ""}, {"name": "梯子", "spec": "1段 2段"}, {"name": "脚立", "spec": "1．4M ／ 2．(　　)M ／ 3．(　　)M"}, {"name": "照明器具", "spec": "手元 , 投光器"}, {"name": "ﾊﾞﾘｹｰﾄﾞ", "spec": "ｶﾗｰｺｰﾝ ／ ﾊﾞｰ"}, {"name": "吸い殻入れ", "spec": ""}, {"name": "防護服", "spec": "上着ﾀｲﾌﾟ 廉価品 ﾀｲﾍﾞｯｸ"}, {"name": "脚絆", "spec": ""}, {"name": "防塵ﾏｽｸ", "spec": ""}, {"name": "ﾍｱｰｷｬｯﾌﾟ", "spec": ""}, {"name": "耳栓", "spec": ""}, {"name": "掃除機", "spec": "100V 充電式"}, {"name": "真空掃除機", "spec": "ﾊﾝﾄﾞ 小 大 水 乾"}, {"name": "換気ﾌｧﾝ", "spec": ""}, {"name": "ﾌｧﾝﾀﾞｸﾄ", "spec": ""}, {"name": "足場板", "spec": "2M 3M 4M (　　)"}, {"name": "突っ張り棒", "spec": ""}, {"name": "養生ｼｰﾄ", "spec": "ﾌﾞﾙｰ 薄/厚手 透明 ﾛｰﾙ"}, {"name": "防炎ｼｰﾄ", "spec": "ﾛｰﾙ"}]}, {"category": "安全対策用品(火気使用)", "items": [{"name": "消火器", "spec": "CO2 , ABC"}, {"name": "防火用ﾊﾞｹﾂ", "spec": ""}, {"name": "ｽﾊﾟｯﾀｼｰﾄ", "spec": ""}, {"name": "噴霧器", "spec": ""}]}, {"category": "使用工具", "items": [{"name": "溶接機", "spec": "ｴﾝｼﾞﾝｳｪﾙﾀﾞｰ ／ TIG溶接機 ﾎﾞﾝﾍﾞ 大 小 ／ CO2溶接機 ﾎﾞﾝﾍﾞ ／ 電気溶接機"}, {"name": "ｶﾞｽ切断器", "spec": "ﾎﾞﾝﾍﾞ台車 ｶﾞｽ共"}, {"name": "ﾌﾟﾗｽﾞﾏ切断器", "spec": ""}, {"name": "ｸﾞﾗｲﾝﾀﾞｰ", "spec": "小 大"}, {"name": "充電ｸﾞﾗｲﾝﾀﾞｰ", "spec": ""}, {"name": "ｲﾝﾊﾟｸﾄﾄﾞﾗｲﾊﾞｰ", "spec": "充電式"}, {"name": "ﾄﾞﾗｲﾊﾞﾄﾞﾘﾙ", "spec": "充電式"}, {"name": "電気ﾄﾞﾘﾙ", "spec": "10mm以下 13mm以下 13mm以上"}, {"name": "ﾃｺ付きﾄﾞﾘﾙ", "spec": ""}, {"name": "小型ﾎﾞｰﾙ盤", "spec": ""}, {"name": "油圧式ﾊﾟﾝﾁｬｰ", "spec": ""}, {"name": "ﾊﾝﾏｰﾄﾞﾘﾙ", "spec": "充電式 ｹｰﾌﾞﾙ式"}, {"name": "ｾｯﾄﾊﾝﾏｰ", "spec": ""}, {"name": "ﾊﾝﾏｰ", "spec": ""}, {"name": "ｾｲﾊﾞｰｿｰ", "spec": ""}, {"name": "ﾁｯﾌﾟｿｰ", "spec": ""}, {"name": "100V-3P", "spec": "電工ﾄﾞﾗﾑ (ｱｰｽ,遮断機付き) ／ 延長ｺｰﾄﾞ (ｱｰｽ付き)"}, {"name": "ﾁｪｰﾝﾌﾞﾛｯｸ", "spec": "0.75t, 1.2t, 1.6t, 1.6t以上"}, {"name": "ﾚﾊﾞｰﾌﾞﾛｯｸ", "spec": "0.75t, 1.2t, 1.6t, 1.6t以上"}, {"name": "ｼｬｯｸﾙ", "spec": "0.5t 1t 1.6t 2t"}, {"name": "ｼｬｺﾏﾝ", "spec": "小 50 100 200 (　　)"}, {"name": "ﾈｼﾞ切り旋盤", "spec": "ﾀﾞｲﾍｯﾄﾞ 8A 10A 15A 20A 25A ／ 32A 40A 50A 65A 80A"}, {"name": "ﾊﾟｲﾌﾟ受台", "spec": ""}, {"name": "脚付ﾊﾞｲｽ", "spec": ""}, {"name": "ﾁｪｰﾝﾊﾞｲｽ", "spec": ""}, {"name": "溶接棒", "spec": "軟鋼 高張力 (　　) ／ SUS"}, {"name": "TIG溶接棒", "spec": "SS (　　) ／ SUS (　　)"}, {"name": "溶接面", "spec": "手面 被面 被面自動 ﾍﾙﾒｯﾄ対応"}, {"name": "ﾎｰｽﾘｰﾙ", "spec": ""}, {"name": "棒ｸﾞﾗｲﾝﾀﾞｰ", "spec": "超硬ﾊﾞｰ 砥石 (　　)"}, {"name": "砥石", "spec": "ｶｯﾄ刃 砥石 ﾍﾟｰﾊﾟｰ"}, {"name": "電動ﾄﾞﾘﾙ用ｿｹｯﾄ", "spec": ""}, {"name": "ｲﾝﾊﾟｸﾄﾚﾝﾁ", "spec": "30mm 32mm"}, {"name": "ﾎﾞｯｸｽﾚﾝﾁｾｯﾄ", "spec": ""}, {"name": "ﾎﾙｿｰ", "spec": ""}, {"name": "ﾗｲﾄﾎﾞｰﾗｰ", "spec": "18mm"}, {"name": "ｱﾝｶｰ", "spec": "SUS M10"}, {"name": "ﾌﾟﾗｽﾁｯｸﾊﾝﾏｰ", "spec": ""}, {"name": "ﾊﾞﾝﾄﾞｿｰ", "spec": "100mm 150mm 300mm"}, {"name": "ﾊﾞﾝﾄﾞｿｰ替刃", "spec": ""}, {"name": "200V-ﾄﾞﾗﾑ", "spec": ""}, {"name": "変圧器", "spec": ""}, {"name": "台付ﾜｲﾔｰ", "spec": "φ6 φ9 φ12 φ14 φ16"}, {"name": "ﾅｲﾛﾝｽﾘﾝｸﾞ", "spec": ""}, {"name": "ﾛｰﾌﾟ", "spec": ""}, {"name": "ｹｰﾌﾞﾙ引き", "spec": ""}, {"name": "ﾊﾟｲﾌﾟﾚﾝﾁ", "spec": "200 250 350 450 600"}, {"name": "ﾁｪｰﾝﾚﾝﾁ", "spec": "200 300 450"}]}, {"category": "手回り工具", "items": [{"name": "ﾓﾝｷｰ ｽﾊﾟﾅ 六角ﾚﾝﾁ ﾀｶﾞﾈ ﾄﾞﾗｲﾊﾞ ﾔｽﾘ ﾍﾟﾝﾁ ﾆｯﾊﾟ", "spec": ""}, {"name": "ﾊﾞｰﾙ", "spec": "300 500 1000 1500 (　　)"}, {"name": "ﾊﾟｲﾌﾟｶｯﾀ", "spec": ""}, {"name": "ﾊﾞｶ棒", "spec": ""}, {"name": "ｼﾉ", "spec": ""}, {"name": "ﾌﾞﾗｼ", "spec": "真鍮 SUS 塩ﾋﾞ"}, {"name": "ﾀｯﾌﾟ", "spec": "M6 M8 M10 M12 M16 (　　)"}, {"name": "ﾀﾞｲｽ", "spec": "M6 M8 M10 M12 M16 (　　)"}, {"name": "ﾗﾁｪｯﾄﾚﾝﾁ", "spec": "～26 (　　)"}, {"name": "ｸﾞﾘｰｽﾎﾟﾝﾌﾟ", "spec": "ｸﾞﾘｰｽ 2本"}, {"name": "ｺｰｷﾝｸﾞｶﾞﾝ", "spec": "ｸﾘｱ 2本"}, {"name": "ｽﾊﾟﾅ大", "spec": "30mm 32mm"}, {"name": "ｽﾅｯﾌﾟﾘﾝｸﾞﾌﾟﾗｲﾔｰ", "spec": ""}, {"name": "ﾌﾟｰﾘｰ抜き", "spec": "φ100 φ150 φ250 φ350"}]}, {"category": "消耗品", "items": [{"name": "ﾋﾞﾆﾙﾃｰﾌﾟ", "spec": ""}, {"name": "養生ﾃｰﾌﾟ", "spec": ""}, {"name": "ｼｰﾙﾃｰﾌﾟ", "spec": ""}, {"name": "ﾍﾙﾒｼｰﾙ", "spec": ""}, {"name": "番線", "spec": "土木用 電気用"}, {"name": "ｺﾞﾐ袋", "spec": ""}, {"name": "ｶﾞﾗ袋", "spec": ""}, {"name": "ﾘｰｸﾁｪｯｸ", "spec": "ﾘｰｸﾁｪｯｶｰ 石鹸水"}, {"name": "潤滑油", "spec": ""}, {"name": "ｽﾃﾝｺﾛﾘﾝ", "spec": ""}, {"name": "ﾊﾟｰﾂｸﾘﾅｰ", "spec": ""}, {"name": "油分解ｽﾌﾟﾚｰ", "spec": "ｼﾝﾌﾟﾙｸﾞﾘｰﾝ"}]}, {"category": "測定器具", "items": [{"name": "水準器", "spec": "小 大 配管用"}, {"name": "ﾁﾙﾃｨﾝｸﾞﾚﾍﾞﾙ", "spec": ""}, {"name": "ｽﾄﾚｯﾁ", "spec": "300 600 1000 1500 2000"}, {"name": "隙間ｹﾞｰｼﾞ", "spec": ""}, {"name": "下げ振り", "spec": ""}, {"name": "ｻｼｶﾞﾈ", "spec": "200 300 450"}, {"name": "ﾚｰｻﾞｰ芯出し", "spec": ""}, {"name": "ﾚｰｻﾞｰﾚﾍﾞﾙ", "spec": ""}, {"name": "水糸", "spec": ""}, {"name": "ﾃｽﾀｰ", "spec": ""}, {"name": "墨つぼ", "spec": ""}, {"name": "ﾁｪｰｸﾗｲﾝ", "spec": ""}]}, {"category": "特殊準備品", "items": [{"name": "SUS養生板", "spec": ""}, {"name": "ｺﾝﾊﾟﾈ", "spec": "9mm (　　)"}, {"name": "ﾍﾞﾆﾔ養生板", "spec": "木 ﾌﾟﾗ"}, {"name": "ｽﾋﾟｰﾄﾞﾛｰﾗｰ", "spec": ""}, {"name": "電動ｳｨﾝﾁ", "spec": ""}, {"name": "平台車", "spec": ""}, {"name": "ﾌﾟﾗ台車", "spec": ""}, {"name": "手押し台車", "spec": ""}, {"name": "高所作業車", "spec": "TR12 TB8 TB6(　　) TB4"}]}];
+
+const state = {}; // key "c-i" -> {checked, qty}
+DATA.forEach((cat,ci)=>cat.items.forEach((it,ii)=>{ state[ci+'-'+ii] = {checked:false, qty:1}; }));
+
+const mainList = document.getElementById('mainList');
+const catChips = document.getElementById('catChips');
+
+function render(){
+  mainList.innerHTML = '';
+  catChips.innerHTML = '<span class="chip active" data-cat="all">すべて</span>';
+  DATA.forEach((cat,ci)=>{
+    const chip = document.createElement('span');
+    chip.className='chip'; chip.dataset.cat=ci; chip.textContent=cat.category;
+    catChips.appendChild(chip);
+
+    const card = document.createElement('div');
+    card.className='category'; card.dataset.cat=ci;
+    const head = document.createElement('div');
+    head.className='cat-head';
+    head.innerHTML = `<div class="title"><span class="name">${cat.category}</span><span class="count zero" id="cnt-${ci}">0</span></div>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>`;
+    head.addEventListener('click', ()=> card.classList.toggle('collapsed'));
+    card.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className='cat-body';
+    cat.items.forEach((it,ii)=>{
+      const key = ci+'-'+ii;
+      const row = document.createElement('div');
+      row.className='item-row'; row.dataset.key=key; row.dataset.name=it.name.toLowerCase();
+      row.innerHTML = `
+        <div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="item-text"><div class="item-name">${it.name}</div>${it.spec?`<div class="item-spec">${it.spec}</div>`:''}</div>
+        <div class="qty-wrap">
+          <button class="qty-btn" data-act="minus">−</button>
+          <input class="qty-val" type="number" min="1" value="1" inputmode="numeric">
+          <button class="qty-btn" data-act="plus">＋</button>
+        </div>`;
+      row.addEventListener('click',(e)=>{
+        if(e.target.closest('.qty-wrap')) return;
+        toggle(key);
+      });
+      row.querySelector('[data-act="minus"]').addEventListener('click',(e)=>{e.stopPropagation(); changeQty(key,-1);});
+      row.querySelector('[data-act="plus"]').addEventListener('click',(e)=>{e.stopPropagation(); changeQty(key,1);});
+      const qtyInput = row.querySelector('.qty-val');
+      qtyInput.addEventListener('click', e=>e.stopPropagation());
+      qtyInput.addEventListener('change', ()=>{
+        let v = parseInt(qtyInput.value)||1; if(v<1) v=1;
+        state[key].qty = v; qtyInput.value = v;
+      });
+      body.appendChild(row);
+    });
+    card.appendChild(body);
+    mainList.appendChild(card);
+  });
+}
+
+function toggle(key){
+  state[key].checked = !state[key].checked;
+  const row = document.querySelector(`.item-row[data-key="${key}"]`);
+  row.classList.toggle('selected', state[key].checked);
+  if(state[key].checked){
+    const qi = row.querySelector('.qty-val');
+    qi.value = state[key].qty;
+  }
+  updateCounts();
+}
+function changeQty(key,d){
+  if(!state[key].checked) return;
+  state[key].qty = Math.max(1, state[key].qty + d);
+  document.querySelector(`.item-row[data-key="${key}"] .qty-val`).value = state[key].qty;
+}
+function updateCounts(){
+  let total = 0;
+  DATA.forEach((cat,ci)=>{
+    let c = 0;
+    cat.items.forEach((it,ii)=>{ if(state[ci+'-'+ii].checked) c++; });
+    total += c;
+    const el = document.getElementById('cnt-'+ci);
+    el.textContent = c; el.classList.toggle('zero', c===0);
+  });
+  document.getElementById('selCountNum').textContent = total;
+  document.getElementById('makeListBtn').disabled = total===0;
+}
+
+// search & category filter
+let activeCat = 'all';
+document.getElementById('searchInput').addEventListener('input', applyFilter);
+catChips.addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  [...catChips.children].forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  activeCat = chip.dataset.cat;
+  applyFilter();
+});
+function applyFilter(){
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  document.querySelectorAll('.category').forEach(card=>{
+    const ci = card.dataset.cat;
+    const catMatch = activeCat==='all' || activeCat===ci;
+    let anyVisible = false;
+    card.querySelectorAll('.item-row').forEach(row=>{
+      const nameMatch = !q || row.dataset.name.includes(q) || row.textContent.toLowerCase().includes(q);
+      const show = catMatch && nameMatch;
+      row.classList.toggle('hidden', !show);
+      if(show) anyVisible = true;
+    });
+    card.style.display = anyVisible ? '' : 'none';
+    if(q && anyVisible) card.classList.remove('collapsed');
+  });
+}
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  Object.keys(state).forEach(k=>{ state[k].checked=false; state[k].qty=1; });
+  document.querySelectorAll('.item-row').forEach(r=>{
+    r.classList.remove('selected');
+    r.querySelector('.qty-val').value = 1;
+  });
+  updateCounts();
+});
+
+// summary screen
+const summaryEl = document.getElementById('summary');
+document.getElementById('makeListBtn').addEventListener('click', buildSummary);
+document.getElementById('backBtn').addEventListener('click', ()=> summaryEl.classList.remove('show'));
+
+function buildSummary(){
+  const today = new Date();
+  const dInput = document.getElementById('projDate');
+  if(!dInput.value){
+    dInput.value = today.toISOString().slice(0,10);
+  }
+  const body = document.getElementById('sumBody');
+  body.innerHTML = '';
+  DATA.forEach((cat,ci)=>{
+    const rows = cat.items.map((it,ii)=>({it, key:ci+'-'+ii})).filter(x=>state[x.key].checked);
+    if(rows.length===0) return;
+    const wrap = document.createElement('div');
+    wrap.className='sum-cat';
+    const h3 = document.createElement('h3'); h3.textContent = cat.category;
+    wrap.appendChild(h3);
+    const table = document.createElement('table'); table.className='sum-table';
+    rows.forEach(r=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="chk">✔</td>
+        <td><div class="nm">${r.it.name}</div>${r.it.spec?`<div class="sp">${r.it.spec}</div>`:''}</td>
+        <td class="qty">${state[r.key].qty} 点</td>`;
+      table.appendChild(tr);
+    });
+    wrap.appendChild(table);
+    body.appendChild(wrap);
+  });
+  summaryEl.classList.add('show');
+}
+
+document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+document.getElementById('copyBtn').addEventListener('click', ()=>{
+  const proj = document.getElementById('projName').value || '（工事名未入力）';
+  const date = document.getElementById('projDate').value || '';
+  const person = document.getElementById('projPerson').value || '';
+  let lines = [`【工事準備リスト】`, `工事名: ${proj}`, `日付: ${date}`, `準備者: ${person}`, ''];
+  DATA.forEach((cat,ci)=>{
+    const rows = cat.items.map((it,ii)=>({it, key:ci+'-'+ii})).filter(x=>state[x.key].checked);
+    if(rows.length===0) return;
+    lines.push(`■ ${cat.category}`);
+    rows.forEach(r=>{
+      const spec = r.it.spec ? `（${r.it.spec}）` : '';
+      lines.push(`□ ${r.it.name}${spec} ×${state[r.key].qty}`);
+    });
+    lines.push('');
+  });
+  const text = lines.join('\n');
+  const finish = ()=>{
+    const btn = document.getElementById('copyBtn');
+    btn.classList.add('copied'); btn.textContent = '✔ コピーしました';
+    setTimeout(()=>{ btn.classList.remove('copied'); btn.textContent='📋 テキストをコピー'; }, 1800);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(finish).catch(()=>fallbackCopy(text,finish));
+  } else {
+    fallbackCopy(text,finish);
+  }
+});
+function fallbackCopy(text,cb){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+  cb();
+}
+
+render();
+updateCounts();
+</script>
+</body>
+</html>
