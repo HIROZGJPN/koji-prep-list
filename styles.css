@@ -208,8 +208,7 @@ table.sum-table .sp{color:var(--gray-500); font-size:11px; margin-top:1px;}
 
 @media print{
   @page{ size:A4; margin:12mm; }
-  body *{visibility:hidden;}
-  #summary, #summary *{visibility:visible;}
+  header, .search-wrap, main, .footer-bar, .toast{display:none !important;}
   #summary{position:static; display:block !important; background:#fff; height:auto;}
   .sum-head, .sum-actions{display:none !important;}
   .sum-scroll{overflow:visible; padding:0; height:auto;}
